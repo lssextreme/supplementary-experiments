@@ -16,8 +16,9 @@ cd /d/学业相关/HXJ大论文/lss_BsiNet
 
 - **先改 `revise_exp/config.py` 顶部**：
   - `DATA_ROOT` —— 改成重新下载后的数据集实际根目录。
-  - `DATASETS` 里三个子目录名（`shandong_256 / netherlands_256 / sichuan_256`）与
-    `train/img|boundary|mask|dist_contour`、`test/img|mask` 结构按实际目录核对。
+  - `DATASETS` 里三个 dataset key（`shandong / netherlands / sichuan`）对应 `D:\data1` 下的实际文件夹名
+    （`Shangdong / Netherlands / Sichuan`），子目录结构为 `train/image|boundary|mask|distance`、
+    `test/image|mask`（Netherlands 的测试图像子目录是 `img`），按实际目录核对。
   - `FASTSAM_WEIGHT` —— 从官方 [FastSAM](https://github.com/CASIA-IVA-Lab/FastSAM) 仓库下载 `FastSAM-x.pt` 并指向它（本仓库不随附任何权重）。
 
 - **⚠️ 已发现 rs-torch 缺两个包，跑之前必须先装**（否则 `import ultralytics` 直接失败）：
@@ -50,7 +51,7 @@ cd /d/学业相关/HXJ大论文/lss_BsiNet
 | `failure_cases.py` | 最低 IoU 样本四联图 | **C6** |
 
 > 训练超参已按**论文正文**固定：Adam lr=0.001、150 epochs、batch=2、无梯度累积、
-> 损失 1:1:1、512×512、验证集 10%、CONF=0.4/IOU=0.9/IMGSZ=1024。
+> 损失 1:1:1、512×512、验证集 10%、CONF=0.4/IOU=0.9/IMGSZ=512。
 
 ---
 
@@ -89,11 +90,17 @@ python revise_exp/compute_flops.py --model full --size 512
 - 明确区分 **trainable（1.78M，对应论文 Discussion）**、**frozen FastSAM-x 主干**、**total**。
 - FLOPs 部分需要 `thop`；未装则先 `pip install thop`。
 
-### C5 · 未过滤（<40% 农田）评估
-- 论文正文实验是“过滤 <40% 农田占比”后的补丁；C5 需要**不带该过滤**的测试集再评一次，
-  说明过滤只影响样本构成、不改变结论。
-- 把未过滤测试集路径配成 `config.DATASETS` 里新增一个 dataset key（如 `shandong_unfiltered`），
-  然后直接 `python revise_exp/evaluate.py --dataset shandong_unfiltered --model full --checkpoint <best.pth>`。
+### C5 · 覆盖率分层评估（对应 R5 回复）
+- 论文基准的测试集本身包含全部农田占比的补丁（无“<40% 农田”过滤）；覆盖率筛选只在
+  **部署推断阶段**作为候选补丁筛查使用。C5 用固定 seed-42 checkpoint 在完整测试集上按农田
+  覆盖率分组（all / ≥40% / [20,40) / <20%）统计指标，检验覆盖率构成对结论的影响。
+- 运行（无需重训练）：
+  ```bash
+  python analysis/band_split_eval.py
+  python analysis/coverage_stats.py
+  python analysis/make_figs12.py
+  ```
+- 产物：`analysis/band_split_results.json`、`figures/fig_coverage.pdf`。
 
 ### C6 · 失败样例可视化
 ```bash

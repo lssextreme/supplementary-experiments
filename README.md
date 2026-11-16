@@ -27,7 +27,7 @@ This repository: **https://github.com/lssextreme/supplementary-experiments**. Th
 | Comment | Added experiment / claim | Scripts | Raw results |
 |---|---|---|---|
 | **R1** — single-run estimates; report mean ± std over ≥3 seeds | Re-ran HARNet and every ablation configuration over seeds 42/123/2024; per-seed IoU figure | `harness/run_multiseed.py`, `harness/stats.py`, `analysis/make_figs12.py` | `results/full_{shandong,netherlands}_seed{42,123,2024}.json`, `figures/fig_per_seed.pdf` |
-| **R2** — justify the 1:1:1 loss weighting; isolate the auxiliary heads | Loss-weight sensitivity (four configurations, Table 1 of the revision) and a mask-only single-task variant (Case H of the ablation) | `harness/run_sensitivity.py`, `harness/run_mask_only.py` | `results/full_shandong_seed42_w1.0_*.json`, `results/sensitivity_summary.json` |
+| **R2** — justify the 1:1:1 loss weighting; isolate the auxiliary heads | Loss-weight sensitivity (four configurations, Table 1 of the revision) and a mask-only single-task variant (Case H of the ablation) | `harness/run_sensitivity.py`, `harness/run_mask_only.py`, `analysis/boundary_metrics.py` | `results/full_shandong_seed42_w1.0_*.json`, `results/sensitivity_summary.json` |
 | **R3** — trainable vs total parameters; FLOPs convention | Itemized parameter accounting (frozen FastSAM-x encoder 72.2341M; trainable 1.7808M; total 74.0149M) and FLOPs at 512×512 including the frozen encoder | `harness/compute_flops.py`, `analysis/flops_thop.py`, `analysis/flops_tfnet.py`, `analysis/profile_modules.py` | printed to stdout; Table 4 of the revision |
 | **R4** — baseline reproduction; TFNet Netherlands outlier | All baselines re-trained in-house with the same split/preprocessing/hyperparameter budget; per-seed baseline results recorded | baseline codebases + `harness/evaluate.py` (shared metric implementation) | baseline means and standard deviations reported in the response letter (Table 2 of the revision), Netherlands diagnostic paragraph in the manuscript |
 | **R5** — 40% coverage filter bias | Coverage-stratified evaluation of the *complete, unfiltered* Shandong and Netherlands test sets with the seed-42 checkpoint (no retraining) | `analysis/band_split_eval.py`, `analysis/coverage_stats.py`, `analysis/make_figs12.py` | `analysis/band_split_results.json`, `figures/fig_coverage.pdf` |
@@ -49,7 +49,7 @@ Training hyperparameters follow the paper exactly: Adam lr = 0.001, 150 epochs, 
 
 **No trained weights are included in this repository.** All reported numbers are reproducible by retraining from scratch with the commands below; the seeds, data splits, and hyperparameters are fixed in `harness/config.py` and in the `run_*.py` scripts, so a re-run regenerates the checkpoints that produced the reported results.
 
-The only pretrained component is the frozen FastSAM-x encoder, a third-party public release: obtain the official `FastSAM-x.pt` checkpoint from the [FastSAM repository](https://github.com/CASIA-IVA-Lab/FastSAM) and point `FASTSAM_WEIGHT` in `harness/config.py` to it — it is not included here. No other weights are required. The raw per-seed outputs of the Shandong and Netherlands multi-seed runs and the loss-weight sensitivity runs are preserved in `results/`, so their reported means and standard deviations can be checked without retraining.
+The only pretrained component is the frozen FastSAM-x encoder, a third-party public release: obtain the official `FastSAM-x.pt` checkpoint from the [FastSAM repository](https://github.com/CASIA-IVA-Lab/FastSAM) and point `FASTSAM_WEIGHT` in `harness/config.py` to it — it is not included here. No other weights are required. The raw per-seed outputs of the Shandong and Netherlands multi-seed runs and the seed-42 loss-weight sensitivity runs are preserved in `results/`; the remaining runs are reproducible with the commands below.
 
 ## Reproduction commands (summary)
 
@@ -86,7 +86,7 @@ The Netherlands cadastral parcel vectors are publicly available from the Dutch n
 
 ## License
 
-[to be completed]
+This repository is released under the [MIT License](LICENSE).
 
 ---
 
