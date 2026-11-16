@@ -17,7 +17,7 @@ This repository: **https://github.com/lssextreme/supplementary-experiments**. Th
 |---|---|
 | `harness/` | Training/evaluation harness for the revision experiments (multi-seed runs, loss-weight sensitivity, mask-only ablation, failure-case visualization, FLOPs/parameter accounting) |
 | `analysis/` | Per-comment analysis scripts (coverage stratification, patch-overlap verification, boundary-head diagnostics, figure generation) |
-| `results/` | Raw per-seed evaluation JSONs for the Shandong and Netherlands multi-seed runs, the loss-weight sensitivity runs, and the coverage-stratified evaluation |
+| `results/` | Raw per-seed evaluation JSONs for the Shandong and Netherlands multi-seed runs and the loss-weight sensitivity runs |
 | `figures/` | The three figures added in the response letter (per-seed IoU, coverage stratification, failure cases) |
 
 ---
@@ -61,7 +61,7 @@ python harness/stats.py
 
 # R2: loss-weight sensitivity and mask-only variant
 python harness/run_sensitivity.py --dataset shandong --seeds 42 123 2024
-python harness/run_mask_only.py --dataset shandong --seeds 42 123 2024
+python harness/run_mask_only.py --datasets shandong --seeds 42 123 2024
 
 # R3: parameters and FLOPs
 python harness/compute_flops.py --model full --size 512
@@ -74,7 +74,8 @@ python analysis/make_figs12.py
 python analysis/check_overlap.py
 
 # R8: failure-case visualization (Fig. 10)
-python harness/failure_cases.py --dataset sichuan --topk 20
+python harness/failure_cases.py --dataset sichuan --checkpoint <best.pth> --topk 20
+python analysis/make_fig3.py
 ```
 
 Each `analysis/` script keeps its local paths (dataset directories, checkpoint locations) at the top of the file; adjust them to your machine.
