@@ -1,0 +1,23 @@
+{
+  "model": "full",
+  "dataset": "shandong",
+  "checkpoint": "D:\\\u5b66\u4e1a\u76f8\u5173\\HXJ\u5927\u8bba\u6587\\lss_BsiNet\\revise_exp\\outputs\\checkpoints\\full_shandong_seed123_w1_1_1\\best.pth",
+  "n_images": 73,
+  "global": {
+    "Acc": 89.591227492241,
+    "F1": 92.43424600548758,
+    "Recall": 92.46458342278113,
+    "Prec": 92.40392849893185,
+    "IoU": 85.93278304868281
+  },
+  "per_image_mean_std": {
+    "IoU": [
+      83.82748071892628,
+      14.14240462732721
+    ],
+    "F1": [
+      90.38980609846699,
+      10.700407187922895
+    ]
+  }
+}

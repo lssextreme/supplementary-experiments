@@ -1,0 +1,23 @@
+{
+  "model": "full",
+  "dataset": "netherlands",
+  "checkpoint": "D:\\\u5b66\u4e1a\u76f8\u5173\\HXJ\u5927\u8bba\u6587\\lss_BsiNet\\revise_exp\\outputs\\checkpoints\\full_netherlands_seed42_w1_1_1\\best.pth",
+  "n_images": 66,
+  "global": {
+    "Acc": 89.18701518665661,
+    "F1": 90.16296390053913,
+    "Recall": 90.55815197890978,
+    "Prec": 89.7712099801225,
+    "IoU": 82.08794329446215
+  },
+  "per_image_mean_std": {
+    "IoU": [
+      80.95700434456357,
+      8.935018121484237
+    ],
+    "F1": [
+      89.13607075520326,
+      6.977559976457621
+    ]
+  }
+}
