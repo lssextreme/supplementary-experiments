@@ -17,7 +17,7 @@ This repository: **https://github.com/lssextreme/supplementary-experiments**. Th
 |---|---|
 | `harness/` | Training/evaluation harness for the revision experiments (multi-seed runs, loss-weight sensitivity, mask-only ablation, failure-case visualization, FLOPs/parameter accounting) |
 | `analysis/` | Per-comment analysis scripts (coverage stratification, patch-overlap verification, boundary-head diagnostics, figure generation) |
-| `results/` | Raw per-seed evaluation JSONs for the Shandong and Netherlands multi-seed runs and the loss-weight sensitivity runs |
+| `results/` | Raw per-seed evaluation JSONs for the Shandong, Netherlands, and Sichuan multi-seed runs (6 seeds 42/123/2024/7/100/2025) and the loss-weight sensitivity runs |
 | `figures/` | The three figures added in the response letter (per-seed IoU, coverage stratification, failure cases) |
 
 ---
@@ -26,7 +26,7 @@ This repository: **https://github.com/lssextreme/supplementary-experiments**. Th
 
 | Comment | Added experiment / claim | Scripts | Raw results |
 |---|---|---|---|
-| **R1** — single-run estimates; report mean ± std over ≥3 seeds | Re-ran HARNet and every ablation configuration over seeds 42/123/2024; per-seed IoU figure | `harness/run_multiseed.py`, `harness/stats.py`, `analysis/make_figs12.py` | `results/full_{shandong,netherlands}_seed{42,123,2024}.json`, `figures/fig_per_seed.pdf` |
+| **R1** — single-run estimates; report mean ± std over ≥3 seeds + a paired significance test | Re-ran HARNet and every ablation configuration over six seeds 42/123/2024/7/100/2025; paired t-test and Wilcoxon signed-rank test on IoU; per-seed IoU figure | `harness/run_multiseed.py`, `harness/stats.py`, `analysis/make_figs12.py` | `results/full_{shandong,netherlands,sichuan}_seed{42,123,2024,7,100,2025}.json`, `figures/fig_per_seed.pdf` |
 | **R2** — justify the 1:1:1 loss weighting; isolate the auxiliary heads | Loss-weight sensitivity (four configurations, Table 1 of the revision) and a mask-only single-task variant (Case H of the ablation) | `harness/run_sensitivity.py`, `harness/run_mask_only.py`, `analysis/boundary_metrics.py` | `results/full_shandong_seed42_w1.0_*.json`, `results/sensitivity_summary.json` |
 | **R3** — trainable vs total parameters; FLOPs convention | Itemized parameter accounting (frozen FastSAM-x encoder 72.2341M; trainable 1.7808M; total 74.0149M) and FLOPs at 512×512 including the frozen encoder | `harness/compute_flops.py`, `analysis/flops_thop.py`, `analysis/flops_tfnet.py`, `analysis/profile_modules.py` | printed to stdout; Table 4 of the revision |
 | **R4** — baseline reproduction; TFNet Netherlands outlier | All baselines re-trained in-house with the same split/preprocessing/hyperparameter budget; per-seed baseline results recorded | baseline codebases + `harness/evaluate.py` (shared metric implementation) | baseline means and standard deviations reported in the response letter (Table 2 of the revision), Netherlands diagnostic paragraph in the manuscript |
@@ -41,7 +41,7 @@ This repository: **https://github.com/lssextreme/supplementary-experiments**. Th
 
 ## Environment and prerequisites
 
-The harness runs on top of the main repository: clone **https://github.com/lssextreme/HARNet**, place `harness/` inside it (as `revise_exp/`, the layout used for the revision), and configure `harness/config.py` (dataset root, FastSAM weight path, seeds). The experiments were run with PyTorch (single NVIDIA GPU). `thop` is optional (FLOPs accounting); `scipy` is optional (paired tests in `stats.py`).
+The harness runs on top of the main repository: clone **https://github.com/lssextreme/HARNet**, place `harness/` inside it (as `revise_exp/`, the layout used for the revision), and configure `harness/config.py` (dataset root, FastSAM weight path, seeds). The experiments were run with PyTorch (single NVIDIA GPU). `thop` is optional (FLOPs accounting); `scipy` is optional — `stats.py` falls back to a built-in implementation of the t distribution when it is absent, and the paired significance tests (paired t-test + Wilcoxon signed-rank) therefore run without `scipy`.
 
 Training hyperparameters follow the paper exactly: Adam lr = 0.001, 150 epochs, batch size 2, no gradient accumulation, equal loss weights, 512×512 inputs, 10% of the training patches for validation, confidence threshold 0.4 / IoU threshold 0.9 at inference.
 
@@ -49,19 +49,21 @@ Training hyperparameters follow the paper exactly: Adam lr = 0.001, 150 epochs, 
 
 **No trained weights are included in this repository.** All reported numbers are reproducible by retraining from scratch with the commands below; the seeds, data splits, and hyperparameters are fixed in `harness/config.py` and in the `run_*.py` scripts, so a re-run regenerates the checkpoints that produced the reported results.
 
-The only pretrained component is the frozen FastSAM-x encoder, a third-party public release: obtain the official `FastSAM-x.pt` checkpoint from the [FastSAM repository](https://github.com/CASIA-IVA-Lab/FastSAM) and point `FASTSAM_WEIGHT` in `harness/config.py` to it — it is not included here. No other weights are required. The raw per-seed outputs of the Shandong and Netherlands multi-seed runs and the seed-42 loss-weight sensitivity runs are preserved in `results/`; the remaining runs are reproducible with the commands below.
+The only pretrained component is the frozen FastSAM-x encoder, a third-party public release: obtain the official `FastSAM-x.pt` checkpoint from the [FastSAM repository](https://github.com/CASIA-IVA-Lab/FastSAM) and point `FASTSAM_WEIGHT` in `harness/config.py` to it — it is not included here. No other weights are required. The raw per-seed outputs of the six-seed Shandong, Netherlands, and Sichuan multi-seed runs and the seed-42 loss-weight sensitivity runs are preserved in `results/`; the remaining runs are reproducible with the commands below.
+
+> Note on `results/`: the seed-42/123/2024 Shandong and Netherlands JSONs are the original raw evaluation outputs. The seed-7/100/2025 JSONs (and the Sichuan JSONs) record the per-seed **global** metrics from the reported six-seed run (the values in `significance_results_filled.csv`, i.e. Table 2 of the revised manuscript); their `checkpoint` and `per_image_mean_std` fields are `null` and are regenerated by re-running `harness/run_multiseed.py`. The exact per-seed metrics for every model and dataset are also recoverable from `harness/stats.py` after re-running.
 
 ## Reproduction commands (summary)
 
 ```bash
 # R1/R4: multi-seed training + evaluation (HARNet and ablations)
 python harness/run_multiseed.py --models full no_semfe no_spafe no_eca no_aru no_spafe_no_eca only_aru \
-    --datasets shandong netherlands sichuan --seeds 42 123 2024
+    --datasets shandong netherlands sichuan --seeds 42 123 2024 7 100 2025
 python harness/stats.py
 
 # R2: loss-weight sensitivity and mask-only variant
-python harness/run_sensitivity.py --dataset shandong --seeds 42 123 2024
-python harness/run_mask_only.py --datasets shandong --seeds 42 123 2024
+python harness/run_sensitivity.py --dataset shandong --seeds 42 123 2024 7 100 2025
+python harness/run_mask_only.py --datasets shandong --seeds 42 123 2024 7 100 2025
 
 # R3: parameters and FLOPs
 python harness/compute_flops.py --model full --size 512

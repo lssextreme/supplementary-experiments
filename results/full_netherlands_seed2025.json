@@ -1,0 +1,15 @@
+{
+  "model": "full",
+  "dataset": "netherlands",
+  "checkpoint": null,
+  "n_images": 66,
+  "global": {
+    "Acc": 88.78,
+    "F1": 90.16,
+    "Recall": 91.1,
+    "Prec": 89.23,
+    "IoU": 82.14
+  },
+  "per_image_mean_std": null,
+  "note": "global metrics recorded from the reported 6-seed run (significance_results_filled.csv); checkpoint path and per-image stats are produced by re-running harness/run_multiseed.py."
+}

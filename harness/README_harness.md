@@ -29,8 +29,8 @@ cd /d/学业相关/HXJ大论文/lss_BsiNet
   `__init__.py` 顶层 `from ultralytics.hub import start` 需要 `requests`，
   `yolo/utils/checks.py` 等需要 `psutil`。这两个包在 base 环境 `D:\conda` 里有、但 rs-torch 没有。
 
-- 其它依赖：`torch, numpy, PIL, tqdm, matplotlib`（失败样例用）；`thop`（FLOPs 用，可选）；`scipy`（t 检验 p 值，可选）。
-  缺 `thop/scipy` 时脚本会跳过并提示。
+- 其它依赖：`torch, numpy, PIL, tqdm, matplotlib`（失败样例用）；`thop`（FLOPs 用，可选）；`scipy`（可选，`stats.py` 的 t 检验在缺 scipy 时自动回退内置实现）。
+  缺 `thop` 时脚本会跳过并提示；显著性检验（配对 t + Wilcoxon）无需 scipy。
 
 ---
 
@@ -47,7 +47,7 @@ cd /d/学业相关/HXJ大论文/lss_BsiNet
 | `run_mask_only.py` | mask-only 单任务消融 | **C2** |
 | `run_sensitivity.py` | 损失权重敏感性 | **C3** |
 | `compute_flops.py` | trainable/total 参数量 + FLOPs | **C4** |
-| `stats.py` | mean±std + 配对 t 检验 + LaTeX 片段 | **C1** |
+| `stats.py` | mean±std + 配对 t 检验 + Wilcoxon 符号秩检验 + LaTeX 片段 | **C1** |
 | `failure_cases.py` | 最低 IoU 样本四联图 | **C6** |
 
 > 训练超参已按**论文正文**固定：Adam lr=0.001、150 epochs、batch=2、无梯度累积、
@@ -57,31 +57,31 @@ cd /d/学业相关/HXJ大论文/lss_BsiNet
 
 ## 3. 逐条跑法
 
-### C1 · 多种子（≥3）+ 配对 t 检验
+### C1 · 多种子（6 种子）+ 配对 t 检验 + Wilcoxon
 ```bash
 python revise_exp/run_multiseed.py \
   --models full no_semfe no_spafe no_eca no_aru no_spafe_no_eca only_aru \
   --datasets shandong netherlands sichuan \
-  --seeds 42 123 2024
+  --seeds 42 123 2024 7 100 2025
 python revise_exp/stats.py
 ```
-- 产物：`outputs/results/multiseed_summary.json`；控制台打印 mean±std、full vs 各消融的配对 t 检验、LaTeX 片段。
-- 基线（TFNet/REAUNet/SEANet/BsiNet/DeepLabV3+）在各自代码里用同样 ≥3 种子重跑后，
+- 产物：`outputs/results/multiseed_summary.json`；控制台打印 mean±std、full vs 各消融的配对 t 检验与 Wilcoxon 检验、LaTeX 片段。
+- 基线（TFNet/REAUNet/SEANet/BsiNet/DeepLabV3+）在各自代码里用同样 6 种子重跑后，
   把结果整理成 `{baseline:{dataset:{seed:{"IoU":...}}}}` JSON，再：
-  `python revise_exp/stats.py --baselines <path>` 得到 full vs 基线的配对 t 检验。
+  `python revise_exp/stats.py --baselines <path>` 得到 full vs 基线的配对 t 检验与 Wilcoxon 检验。
 
 ### C2 · mask-only 消融
 ```bash
-python revise_exp/run_mask_only.py --datasets shandong netherlands sichuan --seeds 42 123 2024
+python revise_exp/run_mask_only.py --datasets shandong netherlands sichuan --seeds 42 123 2024 7 100 2025
 ```
 - 产物：`outputs/results/maskonly_summary.json`，与三任务 full 的 IoU 对比说明辅助头收益。
 
 ### C3 · 损失权重敏感性
 ```bash
-python revise_exp/run_sensitivity.py --dataset shandong --seeds 42
+python revise_exp/run_sensitivity.py --dataset shandong --seeds 42 123 2024 7 100 2025
 ```
 - 对 `config.WEIGHT_RATIOS`（1:1:1 / 1:0.5:0.5 / 1:1:0.5 / 1:2:1）各训一次，输出 IoU 对比，
-  论证论文基准 1:1:1 稳健。可按算力加 `--seeds 42 123 2024`。
+  论证论文基准 1:1:1 稳健。论文报告 6 种子的 mean±std（Table 1）。
 
 ### C4 · 参数量/FLOPs 口径
 ```bash
